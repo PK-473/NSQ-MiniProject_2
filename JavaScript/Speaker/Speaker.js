@@ -1,3 +1,6 @@
+
+//Validation : 2
+
 var Speaker = Speaker || {};
 
 Speaker.validateEmailAndPhone = function (executionContext) {
@@ -35,5 +38,43 @@ Speaker.validateEmailAndPhone = function (executionContext) {
             formContext.getControl("trpj_phone_number")
                 .clearNotification();
         }
+    }
+};
+
+
+
+
+
+
+
+//Validation : 3
+
+Speaker.validateLinkedInUrl = function (executionContext) {
+
+    var formContext = executionContext.getFormContext();
+
+    var linkedInUrl =
+        formContext.getAttribute("trpj_linkedin_profile")?.getValue();
+
+    var control =
+        formContext.getControl("trpj_linkedin_profile");
+
+    // Clear old notification
+    control.clearNotification("linkedinValidation");
+
+    // Blank value is allowed
+    if (!linkedInUrl) {
+        return;
+    }
+
+    var linkedInRegex =
+        /^https?:\/\/(www\.)?linkedin\.com\/.*$/i;
+
+    if (!linkedInRegex.test(linkedInUrl)) {
+
+        control.setNotification(
+            "Please enter a valid LinkedIn Profile URL.",
+            "linkedinValidation"
+        );
     }
 };
