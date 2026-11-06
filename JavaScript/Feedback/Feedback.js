@@ -29,3 +29,41 @@ function showHideComments(executionContext) {
         commentsControl.setVisible(false);
     }
 }
+
+
+/*
+Requirement F7:
+Submitted On should remain read-only after record creation.
+
+New record      = Submitted On is editable
+Existing record = Submitted On is read-only
+*/
+function lockSubmittedOn(executionContext) {
+
+    // Get the current Feedback form
+    var formContext = executionContext.getFormContext();
+
+    // Get the current form type
+    var formType = formContext.ui.getFormType();
+
+    // Get the Submitted On field control
+    var submittedOnControl =
+        formContext.getControl("trpj_submittedon");
+
+    // Stop the function if Submitted On is not present on the form
+    if (submittedOnControl === null) {
+        return;
+    }
+
+    // Form type 1 means Create form
+    if (formType === 1) {
+
+        // Keep Submitted On editable on a new Feedback record
+        submittedOnControl.setDisabled(false);
+    }
+    else {
+
+        // Lock Submitted On for an existing Feedback record
+        submittedOnControl.setDisabled(true);
+    }
+}
