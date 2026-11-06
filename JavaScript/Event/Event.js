@@ -121,14 +121,44 @@ NSQ.Event = (function () {
         formContext.ui.clearFormNotification("bpfPending");
         switchProcessByEventType(formContext);
     }
+
+    // S4: warn when the event has no sessions and starts in less than 24 hours.
+    function warnIfNoSessionsSoon(formContext) {
+        var FORM_CREATE = 1;
+        var NOTIFICATION_ID = "noSessionWarning";
+        formContext.ui.clearFormNotification(NOTIFICATION_ID);
  
+        if (formContext.ui.getFormType() === FORM_CREATE) { return; }   // a new event has no ID to query yet
  
+        var start = formContext.getAttribute("trpj_startdate").getValue();
+        if (start === null) { return; }
+ 
+        var hoursAway = (start - new Date()) / 3600000;
+        if (hoursAway <= 0 || hoursAway >= 24) { return; }              // only when it starts within the next 24 hours
+ 
+        var eventId = formContext.data.entity.getId().replace(/[{}]/g, "");
+        var query = "?$select=trpj_sessionid&$top=1&$filter=_trpj_eventid_value eq " + eventId;
+ 
+        Xrm.WebApi.retrieveMultipleRecords("trpj_session", query).then(
+            function (result) {
+                if (result.entities.length === 0) {
+                    formContext.ui.setFormNotification(
+                        "No sessions exist and this event starts in less than 24 hours.",
+                        "WARNING", NOTIFICATION_ID);
+                }
+            },
+            function (error) {
+                console.log("S4 session check failed: " + error.message);
+            }
+        );
+    }
  
     function onLoad(executionContext) {
         var formContext = executionContext.getFormContext();
         formContext.data.entity.addOnPostSave(onPostSave);
         onDateChange(executionContext);   // E1
         lockEventTypeIfSessionsExist(formContext);  // E11
+        warnIfNoSessionsSoon(formContext);  // S4
         switchProcessByEventType(formContext);  // E12
     }
  
