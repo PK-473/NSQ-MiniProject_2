@@ -48,6 +48,27 @@ NSQ.Event = (function () {
         }
     }
 
+    // E11: Event Type cannot be changed once at least one session exists.
+    // Queries the Session table directly, because the Number of Sessions rollup is not instant.
+    function lockEventTypeIfSessionsExist(formContext) {
+        var FORM_CREATE = 1;
+        if (formContext.ui.getFormType() === FORM_CREATE) { return; }   // a new event has no sessions yet
+ 
+        var eventId = formContext.data.entity.getId().replace(/[{}]/g, "");
+        var query = "?$select=trpj_sessionid&$top=1&$filter=_trpj_eventid_value eq " + eventId;
+ 
+        Xrm.WebApi.retrieveMultipleRecords("trpj_session", query).then(
+            function (result) {
+                if (result.entities.length > 0) {
+                    formContext.getControl("trpj_eventtype").setDisabled(true);
+                }
+            },
+            function (error) {
+                console.log("E11 session check failed: " + error.message);
+            }
+        );
+    }
+
     // E12: switch the BPF to match Event Type. The BPF is found by name, so no GUID is hardcoded.
     var EVENT_TYPE = { conference: 100000000, webinar: 100000001, workshop: 100000002, corporate: 100000003 };
  
@@ -107,6 +128,7 @@ NSQ.Event = (function () {
         var formContext = executionContext.getFormContext();
         formContext.data.entity.addOnPostSave(onPostSave);
         onDateChange(executionContext);   // E1
+        lockEventTypeIfSessionsExist(formContext);  // E11
         switchProcessByEventType(formContext);  // E12
     }
  
