@@ -31,6 +31,22 @@ NSQ.Event = (function () {
             });
         }
     }
+
+    // E7: Start Date cannot be in the past when creating a new event.
+    function onSave(executionContext) {
+        var formContext = executionContext.getFormContext();
+        var FORM_CREATE = 1;
+        if (formContext.ui.getFormType() !== FORM_CREATE) { return; }   // only on create
+ 
+        var start = formContext.getAttribute(FIELD.startDate).getValue();
+        if (start !== null && start < new Date()) {
+            executionContext.getEventArgs().preventDefault();           // stops the save
+            Xrm.Navigation.openAlertDialog({
+                text: "Start Date cannot be in the past.",
+                title: "Invalid Start Date"
+            });
+        }
+    }
  
     function onLoad(executionContext) {
         onDateChange(executionContext);   // E1
@@ -39,6 +55,7 @@ NSQ.Event = (function () {
  
     return {
         onLoad: onLoad,
-        onDateChange: onDateChange
+        onDateChange: onDateChange,
+        onSave: onSave
     };
 })();
