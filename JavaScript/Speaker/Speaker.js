@@ -7,7 +7,7 @@ Speaker.validateEmailAndPhone = function (executionContext) {
 
     var formContext = executionContext.getFormContext();
 
-    var email = formContext.getAttribute("EmailAddress")?.getValue();
+    var email = formContext.getAttribute("emailaddress")?.getValue();
     var phone = formContext.getAttribute("trpj_phone_number")?.getValue();
 
     // Email Validation
@@ -15,11 +15,11 @@ Speaker.validateEmailAndPhone = function (executionContext) {
         var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
         if (!emailRegex.test(email)) {
-            formContext.getControl("EmailAddress")
+            formContext.getControl("emailaddress")
                 .setNotification("Please enter a valid email address.");
         }
         else {
-            formContext.getControl("EmailAddress")
+            formContext.getControl("emailaddress")
                 .clearNotification();
         }
     }
@@ -76,5 +76,36 @@ Speaker.validateLinkedInUrl = function (executionContext) {
             "Please enter a valid LinkedIn Profile URL.",
             "linkedinValidation"
         );
+    }
+};
+
+
+
+
+//Validation : 4
+
+Speaker.validateContactInfo = function (executionContext) {
+
+    var formContext = executionContext.getFormContext();
+    var eventArgs = executionContext.getEventArgs();
+
+    var email =
+        formContext.getAttribute("emailaddress")?.getValue();
+
+    var phone =
+        formContext.getAttribute("trpj_phone_number")?.getValue();
+
+    // Clear previous notification
+    formContext.ui.clearFormNotification("contactValidation");
+
+    if (!email && !phone) {
+
+        formContext.ui.setFormNotification(
+            "Either Email Address or Phone Number must be provided.",
+            "ERROR",
+            "contactValidation"
+        );
+
+        eventArgs.preventDefault();
     }
 };
