@@ -47,15 +47,73 @@ NSQ.Event = (function () {
             });
         }
     }
+
+    // E12: switch the BPF to match Event Type. The BPF is found by name, so no GUID is hardcoded.
+    var EVENT_TYPE = { conference: 100000000, webinar: 100000001, workshop: 100000002, corporate: 100000003 };
+ 
+    function switchProcessByEventType(formContext) {
+        var type = formContext.getAttribute("trpj_eventtype").getValue();
+        if (type === null) { return; }
+ 
+        var name = (type === EVENT_TYPE.corporate) ? "Corporate Event Process" : "Public Event Process";
+        var query = "?$select=workflowid&$top=1&$filter=name eq '" + name + "' and category eq 4 and statecode eq 1";
+ 
+        Xrm.WebApi.retrieveMultipleRecords("workflow", query).then(function (result) {
+            if (result.entities.length === 0) { return; }
+ 
+            var processId = result.entities[0].workflowid.toLowerCase();
+            var active = formContext.data.process.getActiveProcess();
+            if (active && active.getId().replace(/[{}]/g, "").toLowerCase() === processId) { return; }   // already on it
+ 
+            formContext.data.process.setActiveProcess(processId, function () { });
+        });
+    }
+ 
+       function descriptionRequiredFor(type) {
+        return type === EVENT_TYPE.conference || type === EVENT_TYPE.workshop;
+    }
+ 
+    function onEventTypeChange(executionContext) {
+        var formContext = executionContext.getFormContext();
+        var FORM_CREATE = 1;
+        var type = formContext.getAttribute("trpj_eventtype").getValue();
+ 
+        if (formContext.ui.getFormType() === FORM_CREATE) {
+            // ...your existing auto-save code for new records stays here...
+            return;
+        }
+ 
+        // Saved record: if the new type needs a Description and it is empty, wait for a successful save.
+        var description = formContext.getAttribute("trpj_description").getValue();
+        if (descriptionRequiredFor(type) && !description) {
+            formContext.ui.setFormNotification(
+                "Enter a Description and save to switch the process.", "INFO", "bpfPending");
+            return;
+        }
+        formContext.ui.clearFormNotification("bpfPending");
+        switchProcessByEventType(formContext);
+    }
+ 
+    // Runs after every successful save, so the switch happens once the required Description exists.
+    function onPostSave(executionContext) {
+        var formContext = executionContext.getFormContext();
+        formContext.ui.clearFormNotification("bpfPending");
+        switchProcessByEventType(formContext);
+    }
+ 
+ 
  
     function onLoad(executionContext) {
+        var formContext = executionContext.getFormContext();
+        formContext.data.entity.addOnPostSave(onPostSave);
         onDateChange(executionContext);   // E1
-        // The next validations (E7, E11, S4, E12, E2) get added here, one at a time.
+        switchProcessByEventType(formContext);  // E12
     }
  
     return {
         onLoad: onLoad,
         onDateChange: onDateChange,
-        onSave: onSave
+        onSave: onSave,
+        onEventTypeChange: onEventTypeChange
     };
 })();
