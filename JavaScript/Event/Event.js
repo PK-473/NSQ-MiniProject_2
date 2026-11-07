@@ -32,6 +32,50 @@ NSQ.Event = (function () {
         }
     }
 
+     var EVENT_STATUS = { draft: 100000000, scheduled: 100000001, completed: 100000002, cancelled: 100000003 };
+ 
+    // E2: when the event is Completed or Cancelled, every field on the form becomes read-only.
+    // keepStatusEditable is true right after the user changes the status, so they can still correct a mistake before saving.
+       var lockedByE2 = [];   // names of the controls E2 disabled, so only those get unlocked later
+ 
+    // E2: Completed or Cancelled makes every field read-only; going back to Draft or Scheduled unlocks them again.
+    function lockFormIfClosed(formContext, keepStatusEditable) {
+        var status = formContext.getAttribute("trpj_eventstatus").getValue();
+        var closed = (status === EVENT_STATUS.completed || status === EVENT_STATUS.cancelled);
+ 
+        if (!closed) {
+            unlockFormAfterClose(formContext);
+            return;
+        }
+ 
+        formContext.ui.controls.forEach(function (control) {
+            if (typeof control.setDisabled !== "function") { return; }   // skip timeline, subgrids
+ 
+            if (keepStatusEditable && typeof control.getAttribute === "function") {
+                var attribute = control.getAttribute();
+                if (attribute && attribute.getName() === "trpj_eventstatus") { return; }
+            }
+            if (!control.getDisabled()) {                                 // only lock what is currently editable
+                control.setDisabled(true);
+                lockedByE2.push(control.getName());
+            }
+        });
+    }
+ 
+    function unlockFormAfterClose(formContext) {
+        lockedByE2.forEach(function (name) {
+            var control = formContext.getControl(name);
+            if (control) { control.setDisabled(false); }
+        });
+        lockedByE2 = [];
+        lockEventTypeIfSessionsExist(formContext);   // E11 must still apply after unlocking
+    }
+ 
+ 
+    function onStatusChange(executionContext) {
+        lockFormIfClosed(executionContext.getFormContext(), true);
+    }
+
     // E7: Start Date cannot be in the past when creating a new event.
     function onSave(executionContext) {
         var formContext = executionContext.getFormContext();
@@ -120,6 +164,7 @@ NSQ.Event = (function () {
         var formContext = executionContext.getFormContext();
         formContext.ui.clearFormNotification("bpfPending");
         switchProcessByEventType(formContext);
+        lockFormIfClosed(formContext, false);
     }
 
     // S4: warn when the event has no sessions and starts in less than 24 hours.
@@ -160,12 +205,15 @@ NSQ.Event = (function () {
         lockEventTypeIfSessionsExist(formContext);  // E11
         warnIfNoSessionsSoon(formContext);  // S4
         switchProcessByEventType(formContext);  // E12
+        lockFormIfClosed(formContext, false);  // E2
     }
  
     return {
         onLoad: onLoad,
         onDateChange: onDateChange,
         onSave: onSave,
-        onEventTypeChange: onEventTypeChange
+        onEventTypeChange: onEventTypeChange,
+        onStatusChange: onStatusChange
+
     };
 })();
