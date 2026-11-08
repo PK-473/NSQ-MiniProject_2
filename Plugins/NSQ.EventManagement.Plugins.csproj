@@ -95,10 +95,23 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Attendee\AttendeeDuplicateCheckPlugin.cs" />
     <Compile Include="Common\LogicalNames.cs" />
+    <Compile Include="Common\M3Helpers.cs" />
+    <Compile Include="Common\M3Names.cs" />
     <Compile Include="Common\OptionSetValues.cs" />
     <Compile Include="Common\PluginBase.cs" />
+<<<<<<< Updated upstream
     <Compile Include="Feedback\FeedbackProfanityValidationPlugin.cs" />
+=======
+    <Compile Include="EventRegistration\RegistrationAttendeeContactPlugin.cs" />
+    <Compile Include="EventRegistration\RegistrationConfirmationNumberPlugin.cs" />
+    <Compile Include="EventRegistration\RegistrationDeleteGuardPlugin.cs" />
+    <Compile Include="EventRegistration\RegistrationDuplicateAttendeePlugin.cs" />
+    <Compile Include="EventRegistration\RegistrationEventStatusAndStartPlugin.cs" />
+    <Compile Include="EventRegistration\RegistrationHelper.cs" />
+    <Compile Include="EventRegistration\RegistrationStatusTransitionPlugin.cs" />
+>>>>>>> Stashed changes
     <Compile Include="Feedback\SetFeedbackSubmittedOnPlugin.cs" />
     <Compile Include="Feedback\ValidateFeedbackSessionStatusPlugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
