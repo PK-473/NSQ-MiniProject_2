@@ -98,7 +98,9 @@
     <Compile Include="Common\LogicalNames.cs" />
     <Compile Include="Common\OptionSetValues.cs" />
     <Compile Include="Common\PluginBase.cs" />
+    <Compile Include="Feedback\FeedbackProfanityValidationPlugin.cs" />
     <Compile Include="Feedback\SetFeedbackSubmittedOnPlugin.cs" />
+    <Compile Include="Feedback\ValidateFeedbackSessionStatusPlugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
