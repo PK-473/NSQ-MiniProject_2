@@ -82,3 +82,75 @@ if (sessionEnd > eventEnd) {
         eventArgs.preventDefault();
     }
 };
+
+
+
+
+
+//Validation : 2
+
+var Session = Session || {};
+
+/**
+ * Enable End Date only when Start Time is selected
+ */
+Session.toggleEndDate = function (executionContext) {
+
+    var formContext = executionContext.getFormContext();
+
+    var startDate = formContext.getAttribute("trpj_start_time")?.getValue();
+
+    var endDateControl = formContext.getControl("trpj_end_date");
+
+    if (!endDateControl) {
+        return;
+    }
+
+    // Disable End Date when Start Time is empty
+    if (!startDate) {
+
+        endDateControl.setDisabled(true);
+
+        // Clear End Date if Start Time removed
+        formContext.getAttribute("trpj_end_date")?.setValue(null);
+    }
+    else {
+        endDateControl.setDisabled(false);
+    }
+};
+
+
+/**
+ * Validate End Date against Start Time
+ */
+Session.validateEndDate = function (executionContext) {
+
+    var formContext = executionContext.getFormContext();
+
+    var startDate = formContext.getAttribute("trpj_start_time")?.getValue();
+
+    var endDate = formContext.getAttribute("trpj_end_date")?.getValue();
+
+    var endDateControl = formContext.getControl("trpj_end_date");
+
+    if (!startDate || !endDate) {
+        endDateControl.clearNotification("endDateValidation");
+        return;
+    }
+
+    // End Date must be greater than Start Time
+    if (endDate <= startDate) {
+
+        endDateControl.setNotification(
+            "End Date must be greater than Start Time.",
+            "endDateValidation"
+        );
+
+        // Clear invalid value
+        formContext.getAttribute("trpj_end_date").setValue(null);
+
+        return;
+    }
+
+    endDateControl.clearNotification("endDateValidation");
+};
