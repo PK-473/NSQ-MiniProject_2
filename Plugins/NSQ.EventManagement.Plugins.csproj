@@ -109,6 +109,7 @@
     <Compile Include="EventRegistration\RegistrationEventStatusAndStartPlugin.cs" />
     <Compile Include="EventRegistration\RegistrationHelper.cs" />
     <Compile Include="EventRegistration\RegistrationStatusTransitionPlugin.cs" />
+    <Compile Include="Feedback\PreventDuplicateFeedbackPlugin.cs" />
     <Compile Include="Feedback\SetFeedbackSubmittedOnPlugin.cs" />
     <Compile Include="Feedback\ValidateFeedbackSessionStatusPlugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
