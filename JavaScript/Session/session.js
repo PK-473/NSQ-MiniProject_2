@@ -206,3 +206,38 @@ Session.validateCompletedStatus = function (executionContext) {
         eventArgs.preventDefault();
     }
 };
+
+
+
+
+
+
+//Validation : S12
+/**
+ * S12
+ * Lock Speaker lookup when Session Status = Completed
+ */
+Session.lockSpeakerWhenCompleted = function (executionContext) {
+
+    var formContext = executionContext.getFormContext();
+
+    var sessionStatus = formContext.getAttribute("trpj_session_status")?.getValue();
+
+    var speakerControl = formContext.getControl("trpj_speakerid");
+
+    if (!speakerControl) {
+        return;
+    }
+
+    // Replace with actual Completed option value
+    var COMPLETED_VALUE = 738000002;
+
+    if (sessionStatus === COMPLETED_VALUE) {
+
+        speakerControl.setDisabled(true);
+    }
+    else {
+
+        speakerControl.setDisabled(false);
+    }
+};
