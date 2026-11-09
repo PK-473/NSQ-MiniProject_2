@@ -154,3 +154,55 @@ Session.validateEndDate = function (executionContext) {
 
     endDateControl.clearNotification("endDateValidation");
 };
+
+
+
+//Validation : 9
+
+/**
+ * Session cannot be marked as Completed before its End Time.
+ */
+Session.validateCompletedStatus = function (executionContext) {
+
+    var formContext = executionContext.getFormContext();
+    var eventArgs = executionContext.getEventArgs();
+
+    formContext.ui.clearFormNotification("completedValidation");
+
+    var sessionStatus = formContext.getAttribute("trpj_session_status")?.getValue();
+
+    var sessionEnd = formContext.getAttribute("trpj_end_date")?.getValue();
+
+    var COMPLETED_VALUE = 738000002;
+
+    // Status is not Completed
+    if (sessionStatus !== COMPLETED_VALUE) {
+        return;
+    }
+
+    // Safety check
+    if (!sessionEnd) {
+
+        formContext.ui.setFormNotification(
+            "End Date is required before marking Session as Completed.",
+            "ERROR",
+            "completedValidation"
+        );
+
+        eventArgs.preventDefault();
+        return;
+    }
+
+    var currentDateTime = new Date();
+
+    if (currentDateTime < sessionEnd) {
+
+        formContext.ui.setFormNotification(
+            "Session cannot be marked as Completed before its End Time.",
+            "ERROR",
+            "completedValidation"
+        );
+
+        eventArgs.preventDefault();
+    }
+};
