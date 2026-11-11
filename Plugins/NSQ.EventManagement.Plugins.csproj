@@ -114,6 +114,11 @@
     <Compile Include="Feedback\ValidateFeedbackAttendancePlugin.cs" />
     <Compile Include="Feedback\ValidateFeedbackSessionStatusPlugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Session\SessionCancelledEventValidationPlugin.cs" />
+    <Compile Include="Session\SessionOverlapValidationPlugin.cs" />
+    <Compile Include="Session\SessionSpeakerOverlapValidationPlugin.cs" />
+    <Compile Include="Session\SessionSpeakerValidationPlugin.cs" />
+    <Compile Include="Speaker\SpeakerDuplicateCheckPlugin.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
