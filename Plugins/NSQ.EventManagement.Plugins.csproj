@@ -101,6 +101,10 @@
     <Compile Include="Common\M3Names.cs" />
     <Compile Include="Common\OptionSetValues.cs" />
     <Compile Include="Common\PluginBase.cs" />
+    <Compile Include="Event\EventCodeGeneratorPlugin.cs" />
+    <Compile Include="Event\EventCompletedNoShowPlugin.cs" />
+    <Compile Include="Event\EventOverlapValidationPlugin.cs" />
+    <Compile Include="Event\EventScheduleRequiresSessionPlugin.cs" />
     <Compile Include="Feedback\FeedbackProfanityValidationPlugin.cs" />
     <Compile Include="EventRegistration\RegistrationAttendeeContactPlugin.cs" />
     <Compile Include="EventRegistration\RegistrationConfirmationNumberPlugin.cs" />
