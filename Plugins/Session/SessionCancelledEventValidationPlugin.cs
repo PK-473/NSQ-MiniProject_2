@@ -6,9 +6,14 @@ using NSQ.EventManagement.Plugins.Common;
 namespace NSQ.EventManagement.Plugins.Session
 {
     /*
-     * Requirement S11:
-     * Session cannot be created
-     * under a Cancelled Event.
+     * Requirements:
+     *
+     * S11:
+     * Session cannot be created under a Cancelled Event.
+     *
+     * E10:
+     * Once Event Status becomes Completed or Cancelled,
+     * Sessions cannot be created or modified.
      */
     public class SessionCancelledEventValidationPlugin : PluginBase
     {
@@ -20,7 +25,8 @@ namespace NSQ.EventManagement.Plugins.Session
 
         private const string EventStatusColumn = "trpj_eventstatus";
 
-        // Replace with actual value
+        private const int CompletedStatus = 100000002;
+
         private const int CancelledStatus = 100000003;
 
         protected override void ExecutePlugin(
@@ -29,10 +35,14 @@ namespace NSQ.EventManagement.Plugins.Session
             ITracingService tracingService)
         {
             tracingService.Trace(
-                "S11 validation started.");
+                "E10/S11 validation started. Message: {0}",
+                context.MessageName);
 
             if (!context.InputParameters.Contains("Target"))
             {
+                tracingService.Trace(
+                    "Target parameter not found.");
+
                 return;
             }
 
@@ -41,40 +51,88 @@ namespace NSQ.EventManagement.Plugins.Session
 
             if (target == null)
             {
+                tracingService.Trace(
+                    "Target is null.");
+
                 return;
             }
 
+            if (!target.LogicalName.Equals(
+                    SessionTable,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                tracingService.Trace(
+                    "Target is not Session.");
+
+                return;
+            }
+
+            Entity preImage = null;
+
+            if (context.PreEntityImages.Contains("PreImage"))
+            {
+                preImage =
+                    context.PreEntityImages["PreImage"];
+            }
+
             EntityReference eventReference =
-                target.GetAttributeValue<EntityReference>(
+                target.Contains(EventLookupColumn)
+                ? target.GetAttributeValue<EntityReference>(
+                    EventLookupColumn)
+                : preImage?.GetAttributeValue<EntityReference>(
                     EventLookupColumn);
 
             if (eventReference == null)
             {
+                tracingService.Trace(
+                    "Event lookup not found.");
+
                 return;
             }
+
+            tracingService.Trace(
+                "Retrieving Event record.");
 
             Entity eventRecord =
                 service.Retrieve(
                     EventTable,
                     eventReference.Id,
-                    new ColumnSet(EventStatusColumn));
+                    new ColumnSet(
+                        EventStatusColumn));
 
-            OptionSetValue status =
+            OptionSetValue eventStatus =
                 eventRecord.GetAttributeValue<OptionSetValue>(
                     EventStatusColumn);
 
-            if (status != null &&
-                status.Value == CancelledStatus)
+            if (eventStatus == null)
             {
                 tracingService.Trace(
-                    "Cancelled Event detected.");
+                    "Event Status is null.");
 
-                throw new InvalidPluginExecutionException(
-                    "Cannot create a Session under a Cancelled Event.");
+                return;
             }
 
             tracingService.Trace(
-                "S11 completed successfully.");
+                "Event Status Value: {0}",
+                eventStatus.Value);
+
+            bool isCompleted =
+                eventStatus.Value == CompletedStatus;
+
+            bool isCancelled =
+                eventStatus.Value == CancelledStatus;
+
+            if (isCompleted || isCancelled)
+            {
+                tracingService.Trace(
+                    "Blocked because Event is Completed or Cancelled.");
+
+                throw new InvalidPluginExecutionException(
+                    "Sessions cannot be created or modified because the selected Event is Completed or Cancelled.");
+            }
+
+            tracingService.Trace(
+                "E10/S11 validation completed successfully.");
         }
     }
 }
