@@ -12,8 +12,8 @@ namespace NSQ.EventManagement.Plugins.Event
         private const string RegistrationStatusColumn = "trpj_registrationstatus";
         private const string EventStatusColumn = "trpj_eventstatus";
         private const int StatusCompleted = 100000002;
-        private const int StatusRegistered = 100000000;
-        private const int StatusNoShow = 100000003;
+        private const int StatusRegistered = 738000000;
+        private const int StatusNoShow = 738000003;
 
         protected override void ExecutePlugin(IPluginExecutionContext context, IOrganizationService service, ITracingService tracing)
         {
