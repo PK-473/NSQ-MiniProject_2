@@ -2,7 +2,7 @@
  * NSQ.EventRegistration | Table: Event Registration (trpj_eventregistration)
  * Web resource: trpj_/scripts/eventregistration.js
  * Owner: Prathamesh
- * Version: 1.1.0   (history: docs/version-history/JavaScript-VersionHistory.md)
+ * Version: 1.2.0   (history: docs/version-history/JavaScript-VersionHistory.md)
  * Items: R1
  */
 var NSQ = NSQ || {};
@@ -67,28 +67,22 @@ NSQ.EventRegistration = (function () {
         );
     }
 
+    // Event Start/End are filled by this script, so they must be submitted even though they are locked.
+    // Confirmation Number is written by plugin R10 on the server, so it is only locked, never submitted.
     function lockAutoFilledFields(formContext) {
         [FIELD.eventStart, FIELD.eventEnd, FIELD.confirmationNumber].forEach(function (field) {
             var control = formContext.getControl(field);
             if (control) { control.setDisabled(true); }
+        });
+        [FIELD.eventStart, FIELD.eventEnd].forEach(function (field) {
             var attr = formContext.getAttribute(field);
             if (attr) { attr.setSubmitMode("always"); }
         });
     }
 
-    // Fallback from the guide (section 7.4): if the primary column cannot be made optional,
-    // put a temporary value on create. Plugin R10 always overwrites it before the save.
-    function setTemporaryConfirmationNumber(formContext) {
-        var attr = formContext.getAttribute(FIELD.confirmationNumber);
-        if (formContext.ui.getFormType() === FORM_TYPE_CREATE && attr && attr.getValue() === null) {
-            attr.setValue("AUTO");
-        }
-    }
-
     function onLoad(executionContext) {
         var formContext = executionContext.getFormContext();
         lockAutoFilledFields(formContext);
-        setTemporaryConfirmationNumber(formContext);
         // A new registration opened from an Event's subgrid arrives with the Event already filled in,
         // and OnChange does not fire for that, so copy the dates now.
         if (formContext.ui.getFormType() === FORM_TYPE_CREATE && getSelectedEventId(formContext) !== null) {
@@ -102,3 +96,4 @@ NSQ.EventRegistration = (function () {
 
     return { onLoad: onLoad, onEventChange: onEventChange };
 })();
+ 
