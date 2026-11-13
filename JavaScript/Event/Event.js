@@ -12,25 +12,62 @@ NSQ.Event = (function () {
         startDate: "trpj_startdate",
         endDate: "trpj_enddate"
     };
- 
-    // E1: End Date read-only until Start Date is set; End <= Start shows an error and clears End.
-    function onDateChange(executionContext) {
-        var formContext = executionContext.getFormContext();
+
+    // E1: Maintain End Date availability based on Start Date.
+    function updateEndDateAvailability(formContext) {
         var start = formContext.getAttribute(FIELD.startDate).getValue();
-        var endAttribute = formContext.getAttribute(FIELD.endDate);
         var endControl = formContext.getControl(FIELD.endDate);
  
-        endControl.setDisabled(start === null);
- 
-        var end = endAttribute.getValue();
-        if (start !== null && end !== null && end <= start) {
-            endAttribute.setValue(null);
-            Xrm.Navigation.openAlertDialog({
-                text: "End Date must be later than Start Date.",
-                title: "Invalid End Date"
-            });
+        if (endControl) {
+            endControl.setDisabled(start === null);
         }
     }
+ 
+    // E1: End Date read-only until Start Date is set.
+    // Earlier calendar dates show an error.
+    // Same calendar date is allowed for time adjustment.
+    // Final date-time validation happens on Save.
+    function onDateChange(executionContext) {
+        var formContext = executionContext.getFormContext();
+ 
+        var start = formContext.getAttribute(FIELD.startDate).getValue();
+        var endAttribute = formContext.getAttribute(FIELD.endDate);
+ 
+        updateEndDateAvailability(formContext);
+ 
+        var end = endAttribute.getValue();
+ 
+        var notificationId = "E1_DateValidation";
+ 
+        if (start === null || end === null) {
+            formContext.ui.clearFormNotification(notificationId);
+            return;
+        }
+    
+        // Compare calendar dates only during field changes.
+        var startDay = new Date(
+            start.getFullYear(),
+            start.getMonth(),
+            start.getDate()
+        );
+ 
+        var endDay = new Date(
+            end.getFullYear(),
+            end.getMonth(),
+            end.getDate()
+        );
+ 
+        if (endDay < startDay) {
+            formContext.ui.setFormNotification(
+                "End Date cannot be earlier than Start Date.",
+                "ERROR",
+            notificationId
+        );
+        } else {
+            formContext.ui.clearFormNotification(notificationId);
+        }
+    }
+
 
      var EVENT_STATUS = { draft: 100000000, scheduled: 100000001, completed: 100000002, cancelled: 100000003 };
  
@@ -65,10 +102,18 @@ NSQ.Event = (function () {
     function unlockFormAfterClose(formContext) {
         lockedByE2.forEach(function (name) {
             var control = formContext.getControl(name);
-            if (control) { control.setDisabled(false); }
+ 
+            if (control) {
+                control.setDisabled(false);
+            }
         });
+    
         lockedByE2 = [];
-        lockEventTypeIfSessionsExist(formContext);   // E11 must still apply after unlocking
+ 
+        // Reapply E1 after E2 unlocks the form.
+        updateEndDateAvailability(formContext);
+ 
+        lockEventTypeIfSessionsExist(formContext); // E11
     }
  
  
@@ -76,15 +121,43 @@ NSQ.Event = (function () {
         lockFormIfClosed(executionContext.getFormContext(), true);
     }
 
-    // E7: Start Date cannot be in the past when creating a new event.
+    // E1 and E7: Validate Event dates before saving.
     function onSave(executionContext) {
         var formContext = executionContext.getFormContext();
-        var FORM_CREATE = 1;
-        if (formContext.ui.getFormType() !== FORM_CREATE) { return; }   // only on create
  
         var start = formContext.getAttribute(FIELD.startDate).getValue();
+        var end = formContext.getAttribute(FIELD.endDate).getValue();
+ 
+        var notificationId = "E1_DateValidation";
+ 
+        // E1: End Date and Time must be later than Start Date and Time.
+        if (start !== null && end !== null && end.getTime() <= start.getTime()) {
+ 
+            formContext.ui.setFormNotification(
+                "End Date and Time must be later than Start Date and Time.",
+                "ERROR",
+                notificationId
+            );
+ 
+            executionContext.getEventArgs().preventDefault();
+ 
+            return;
+        }
+ 
+        // Clear E1 error when dates are valid.
+        formContext.ui.clearFormNotification(notificationId);
+ 
+        // E7: Start Date cannot be in the past when creating a new event.
+        var FORM_CREATE = 1;
+ 
+        if (formContext.ui.getFormType() !== FORM_CREATE) {
+            return;
+        }
+ 
         if (start !== null && start < new Date()) {
-            executionContext.getEventArgs().preventDefault();           // stops the save
+ 
+            executionContext.getEventArgs().preventDefault();
+ 
             Xrm.Navigation.openAlertDialog({
                 text: "Start Date cannot be in the past.",
                 title: "Invalid Start Date"
@@ -92,7 +165,7 @@ NSQ.Event = (function () {
         }
     }
 
-    // E11: Event Type cannot be changed once at least one session exists.
+        // E11: Event Type cannot be changed once at least one session exists.
     // Queries the Session table directly, because the Number of Sessions rollup is not instant.
     function lockEventTypeIfSessionsExist(formContext) {
         var FORM_CREATE = 1;
