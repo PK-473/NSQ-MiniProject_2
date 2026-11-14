@@ -7,7 +7,7 @@ using NSQ.EventManagement.Plugins.Common;
 namespace NSQ.EventManagement.Plugins.EventRegistration
 {
     /// <summary>
-    /// R5 | Event Registration | Create | PreValidation | Decision D3: block if email OR phone is missing.
+    /// R5 | Event Registration | Create | PreValidation | Decision D3: block only when BOTH email and phone are missing.
     /// </summary>
     public class RegistrationAttendeeContactPlugin : PluginBase
     {
@@ -22,10 +22,10 @@ namespace NSQ.EventManagement.Plugins.EventRegistration
 
             var email = attendee.GetAttributeValue<string>(M3Names.AttEmail);
             var phone = attendee.GetAttributeValue<string>(M3Names.AttPhone);
-            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(phone))
+            if (string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(phone))
             {
                 throw new InvalidPluginExecutionException(
-                    "Registration is blocked because the attendee's email or phone number is missing. Update the attendee first.");
+                    "Registration is blocked because the attendee has no email and no phone number. Add at least one on the attendee record first.");
             }
         }
     }
