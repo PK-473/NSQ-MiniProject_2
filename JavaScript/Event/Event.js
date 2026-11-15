@@ -179,9 +179,6 @@ NSQ.Event = (function () {
                 if (result.entities.length > 0) {
                     formContext.getControl("trpj_eventtype").setDisabled(true);
                 }
-            },
-            function (error) {
-                console.log("E11 session check failed: " + error.message);
             }
         );
     }
@@ -264,9 +261,6 @@ NSQ.Event = (function () {
                         "No sessions exist and this event starts in less than 24 hours.",
                         "WARNING", NOTIFICATION_ID);
                 }
-            },
-            function (error) {
-                console.log("S4 session check failed: " + error.message);
             }
         );
     }
