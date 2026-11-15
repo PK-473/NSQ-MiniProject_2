@@ -1,32 +1,28 @@
 ﻿using System;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Query;
 using NSQ.EventManagement.Plugins.Common;
 
 namespace NSQ.EventManagement.Plugins.Feedback
 {
     /*
-     * Requirement F4:
-     * Prevent creating or updating Feedback when Comments contains
-     * a forbidden word.
+     * Prevent creating or updating Feedback when Comments
+     * contains a forbidden whole word.
      *
-     * Matching rules:
-     * 1. Check complete words only.
-     * 2. Ignore uppercase and lowercase differences.
-     * 3. Allow blank Comments.
+     * Forbidden words are read from the environment variable:
+     * trpj_ForbiddenWords
      */
     public class FeedbackProfanityValidationPlugin : PluginBase
     {
-        // Feedback table and column logical names
+        // Feedback logical names
         private const string FeedbackTable = "trpj_feedback";
         private const string CommentsColumn = "trpj_comments";
 
-        // Forbidden words approved for the simple profanity check
-        private readonly string[] forbiddenWords =
- {
-    "idiot", "stupid", "damn","nonsense","useless","fuck","shit","bitch","asshole","bastard","crap","dick"
-};
-
+        // Environment variable schema name
+        private const string ForbiddenWordsVariable =
+            "trpj_ForbiddenWords";
 
         protected override void ExecutePlugin(
             IPluginExecutionContext context,
@@ -34,128 +30,227 @@ namespace NSQ.EventManagement.Plugins.Feedback
             ITracingService tracingService)
         {
             tracingService.Trace(
-                "F4 started. Message: {0}, Stage: {1}, Mode: {2}",
-                context.MessageName,
-                context.Stage,
-                context.Mode);
+                "FeedbackProfanityValidationPlugin started.");
 
-            // Run the validation only for Create and Update operations
-            bool isCreate = context.MessageName.Equals(
-                "Create",
-                StringComparison.OrdinalIgnoreCase);
-
-            bool isUpdate = context.MessageName.Equals(
-                "Update",
-                StringComparison.OrdinalIgnoreCase);
-
-            if (!isCreate && !isUpdate)
+            // Run only on Create and Update
+            if (!context.MessageName.Equals(
+                    "Create",
+                    StringComparison.OrdinalIgnoreCase) &&
+                !context.MessageName.Equals(
+                    "Update",
+                    StringComparison.OrdinalIgnoreCase))
             {
                 tracingService.Trace(
-                    "F4 stopped because the message is not Create or Update.");
+                    "Plugin stopped because the message is not Create or Update.");
 
                 return;
             }
 
-            // Confirm that the Target parameter exists
+            // Check whether Target exists
             if (!context.InputParameters.Contains("Target"))
             {
                 tracingService.Trace(
-                    "F4 stopped because Target is missing.");
+                    "Plugin stopped because Target is missing.");
 
                 return;
             }
 
-            // Get the Feedback record being created or updated
+            // Get the Feedback record
             Entity target =
                 context.InputParameters["Target"] as Entity;
 
             if (target == null)
             {
                 tracingService.Trace(
-                    "F4 stopped because Target is not an Entity.");
+                    "Plugin stopped because Target is not an Entity.");
 
                 return;
             }
 
-            tracingService.Trace(
-                "Target received. Logical name: {0}",
-                target.LogicalName);
-
-            // Confirm that the Target belongs to the Feedback table
+            // Confirm that Target is Feedback
             if (!target.LogicalName.Equals(
                     FeedbackTable,
                     StringComparison.OrdinalIgnoreCase))
             {
                 tracingService.Trace(
-                    "F4 stopped because Target is not Feedback.");
+                    "Plugin stopped because Target is not Feedback.");
 
                 return;
             }
 
             /*
-             * During Update, Target contains only changed columns.
-             * If Comments is not present, the user did not change Comments,
-             * so no profanity validation is required.
+             * On Update, Target contains only changed columns.
+             * If Comments is not changed, validation is not needed.
              */
             if (!target.Contains(CommentsColumn))
             {
                 tracingService.Trace(
-                    "F4 completed because Comments is not present in Target.");
+                    "Comments is not present in Target.");
 
                 return;
             }
 
-            // Read the Comments value
+            // Get Comments
             string comments =
                 target.GetAttributeValue<string>(CommentsColumn);
 
-            // Blank Comments is allowed
+            // Allow blank Comments
             if (string.IsNullOrWhiteSpace(comments))
             {
                 tracingService.Trace(
-                    "F4 completed because Comments is blank.");
+                    "Comments is blank.");
 
                 return;
             }
 
-            tracingService.Trace(
-                "Comments received. Starting whole-word validation.");
+            /*
+             * STEP 1:
+             * Find the environment variable definition using
+             * schema name trpj_ForbiddenWords.
+             */
+            QueryExpression definitionQuery =
+                new QueryExpression(
+                    "environmentvariabledefinition");
 
-            // Check Comments against every forbidden word
+            definitionQuery.ColumnSet =
+                new ColumnSet(
+                    "environmentvariabledefinitionid",
+                    "defaultvalue");
+
+            definitionQuery.TopCount = 1;
+
+            definitionQuery.Criteria.AddCondition(
+                "schemaname",
+                ConditionOperator.Equal,
+                ForbiddenWordsVariable);
+
+            EntityCollection definitions =
+                service.RetrieveMultiple(definitionQuery);
+
+            if (definitions.Entities.Count == 0)
+            {
+                tracingService.Trace(
+                    "Forbidden Words environment variable was not found.");
+
+                throw new InvalidPluginExecutionException(
+                    "Forbidden-words validation is not configured. Please contact the administrator.");
+            }
+
+            Entity definition =
+                definitions.Entities[0];
+
+            Guid definitionId =
+                definition.Id;
+
+            string defaultValue =
+                definition.GetAttributeValue<string>(
+                    "defaultvalue");
+
+            tracingService.Trace(
+                "Forbidden Words environment variable definition found.");
+
+            /*
+             * STEP 2:
+             * Get the Current Value connected to the definition.
+             */
+            QueryExpression valueQuery =
+                new QueryExpression(
+                    "environmentvariablevalue");
+
+            valueQuery.ColumnSet =
+                new ColumnSet("value");
+
+            valueQuery.TopCount = 1;
+
+            valueQuery.Criteria.AddCondition(
+                "environmentvariabledefinitionid",
+                ConditionOperator.Equal,
+                definitionId);
+
+            EntityCollection currentValues =
+                service.RetrieveMultiple(valueQuery);
+
+            string currentValue = null;
+
+            if (currentValues.Entities.Count > 0)
+            {
+                currentValue =
+                    currentValues.Entities[0]
+                        .GetAttributeValue<string>("value");
+            }
+
+            /*
+             * Use Current Value when available.
+             * Otherwise, use Default Value.
+             */
+            string forbiddenWordsText =
+                !string.IsNullOrWhiteSpace(currentValue)
+                    ? currentValue
+                    : defaultValue;
+
+            if (string.IsNullOrWhiteSpace(forbiddenWordsText))
+            {
+                tracingService.Trace(
+                    "Forbidden Words environment variable is empty.");
+
+                throw new InvalidPluginExecutionException(
+                    "Forbidden-words validation is not configured. Please contact the administrator.");
+            }
+
+            /*
+             * Convert the comma-separated environment variable
+             * value into a string array.
+             *
+             * Example:
+             * idiot,stupid,damn
+             *
+             * Becomes:
+             * ["idiot", "stupid", "damn"]
+             */
+            string[] forbiddenWords = forbiddenWordsText
+                .Split(
+                    new[] { ',', ';', '\r', '\n' },
+                    StringSplitOptions.RemoveEmptyEntries)
+                .Select(word => word.Trim())
+                .Where(word =>
+                    !string.IsNullOrWhiteSpace(word))
+                .ToArray();
+
+            tracingService.Trace(
+                "Forbidden Words loaded. Count: {0}",
+                forbiddenWords.Length);
+
+            // Check Comments against each configured word
             foreach (string forbiddenWord in forbiddenWords)
             {
                 /*
-                 * Regex.Escape safely handles any special character
-                 * that might be present in a forbidden word.
-                 *
-                 * \b represents a word boundary, so only complete
-                 * words are matched.
+                 * \b checks whole words only.
+                 * IgnoreCase allows uppercase and lowercase variations.
                  */
                 string pattern =
-                    @"\b" + Regex.Escape(forbiddenWord) + @"\b";
+                    @"\b" +
+                    Regex.Escape(forbiddenWord) +
+                    @"\b";
 
-                bool containsForbiddenWord = Regex.IsMatch(
-                    comments,
-                    pattern,
-                    RegexOptions.IgnoreCase |
-                    RegexOptions.CultureInvariant);
+                bool containsForbiddenWord =
+                    Regex.IsMatch(
+                        comments,
+                        pattern,
+                        RegexOptions.IgnoreCase |
+                        RegexOptions.CultureInvariant);
 
                 if (containsForbiddenWord)
                 {
                     tracingService.Trace(
-                        "F4 blocked the operation because a forbidden word was found.");
+                        "Feedback blocked because a forbidden word was found.");
 
-                    /*
-                     * Do not trace the complete Comments value because it
-                     * may contain user-entered or inappropriate content.
-                     */
                     throw new InvalidPluginExecutionException(
                         "Comments contains inappropriate language. Remove the forbidden word and try again.");
                 }
             }
 
             tracingService.Trace(
-                "F4 completed successfully. No forbidden words were found.");
+                "Plugin completed. No forbidden words were found.");
         }
     }
 }
