@@ -1,3 +1,5 @@
+"use strict";
+
 /*
 Requirement F1:
 Show Comments only when Rating is 1 or 2.
@@ -6,26 +8,34 @@ Hide Comments when Rating is blank, 3, 4 or 5.
 Note:
 The Business Rule controls whether Comments is required.
 */
-
 function showHideComments(executionContext) {
 
     // Get the current Feedback form
     var formContext = executionContext.getFormContext();
 
     // Get the selected Rating value
-    var rating = formContext.getAttribute("trpj_rating").getValue();
+    var ratingAttribute =
+        formContext.getAttribute("trpj_rating");
 
     // Get the Comments field control
-    var commentsControl = formContext.getControl("trpj_comments");
+    var commentsControl =
+        formContext.getControl("trpj_comments");
+
+    // Stop safely if the required form components are unavailable
+    if (ratingAttribute === null || commentsControl === null) {
+        return;
+    }
+
+    // Get the selected Rating value
+    var rating = ratingAttribute.getValue();
 
     // If Rating is 1 or 2, show Comments and allow editing
     if (rating === 1 || rating === 2) {
         commentsControl.setVisible(true);
         commentsControl.setDisabled(false);
     }
-
-    // For blank, 3, 4 or 5, hide Comments
     else {
+        // For blank, 3, 4 or 5, hide Comments
         commentsControl.setVisible(false);
     }
 }
@@ -50,19 +60,17 @@ function lockSubmittedOn(executionContext) {
     var submittedOnControl =
         formContext.getControl("trpj_submittedon");
 
-    // Stop the function if Submitted On is not present on the form
+    // Stop if Submitted On is not present on the form
     if (submittedOnControl === null) {
         return;
     }
 
     // Form type 1 means Create form
     if (formType === 1) {
-
         // Keep Submitted On editable on a new Feedback record
         submittedOnControl.setDisabled(false);
     }
     else {
-
         // Lock Submitted On for an existing Feedback record
         submittedOnControl.setDisabled(true);
     }
