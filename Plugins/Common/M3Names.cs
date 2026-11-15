@@ -25,6 +25,7 @@ namespace NSQ.EventManagement.Plugins.Common
         public const int RegStatusRegistered = 738000000;
         public const int RegStatusCancelled = 738000001;
         public const int RegStatusAttended = 738000002;
+        public const int RegStatusNoShow = 738000003;
 
         // Attendee
         public const string Attendee = Prefix + "attendee";
