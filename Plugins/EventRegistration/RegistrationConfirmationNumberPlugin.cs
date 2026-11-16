@@ -23,13 +23,13 @@ namespace NSQ.EventManagement.Plugins.EventRegistration
             // AD = first letter of first name + first letter of last name (X if blank).
             string firstLetter = "X";
             string secondLetter = "X";
-            var attendeeRef = target.GetAttributeValue<EntityReference>(M3Names.RegAttendee);
+            var attendeeRef = target.GetAttributeValue<EntityReference>(LogicalNames.RegAttendee);
             if (attendeeRef != null)
             {
                 var attendee = service.Retrieve(attendeeRef.LogicalName, attendeeRef.Id,
-                    new ColumnSet(M3Names.AttFirstName, M3Names.AttLastName));
-                firstLetter = FirstLetter(attendee.GetAttributeValue<string>(M3Names.AttFirstName));
-                secondLetter = FirstLetter(attendee.GetAttributeValue<string>(M3Names.AttLastName));
+                    new ColumnSet(LogicalNames.AttFirstName, LogicalNames.AttLastName));
+                firstLetter = FirstLetter(attendee.GetAttributeValue<string>(LogicalNames.AttFirstName));
+                secondLetter = FirstLetter(attendee.GetAttributeValue<string>(LogicalNames.AttLastName));
             }
 
             string prefix = firstLetter + secondLetter + "-EN-" + DateTime.UtcNow.ToString("ddMM") + "-";
@@ -43,11 +43,11 @@ namespace NSQ.EventManagement.Plugins.EventRegistration
                 attempts++;
             }
 
-            target[M3Names.RegConfirmationNumber] = prefix + next.ToString("0000");
+            target[LogicalNames.RegConfirmationNumber] = prefix + next.ToString("0000");
 
-            if (!target.Contains(M3Names.RegDate) || target[M3Names.RegDate] == null)
+            if (!target.Contains(LogicalNames.RegDate) || target[LogicalNames.RegDate] == null)
             {
-                target[M3Names.RegDate] = DateTime.UtcNow;
+                target[LogicalNames.RegDate] = DateTime.UtcNow;
             }
         }
 
@@ -60,18 +60,18 @@ namespace NSQ.EventManagement.Plugins.EventRegistration
         // Scanning several records means one badly formatted number cannot reset the sequence to 1.
         private static int GetHighestRunningNumber(IOrganizationService service)
         {
-            var query = new QueryExpression(M3Names.Registration)
+            var query = new QueryExpression(LogicalNames.Registration)
             {
                 TopCount = LookBack,
-                ColumnSet = new ColumnSet(M3Names.RegConfirmationNumber)
+                ColumnSet = new ColumnSet(LogicalNames.RegConfirmationNumber)
             };
-            query.Criteria.AddCondition(M3Names.RegConfirmationNumber, ConditionOperator.NotNull);
+            query.Criteria.AddCondition(LogicalNames.RegConfirmationNumber, ConditionOperator.NotNull);
             query.Orders.Add(new OrderExpression("createdon", OrderType.Descending));
 
             int highest = 0;
             foreach (var record in service.RetrieveMultiple(query).Entities)
             {
-                string value = record.GetAttributeValue<string>(M3Names.RegConfirmationNumber);
+                string value = record.GetAttributeValue<string>(LogicalNames.RegConfirmationNumber);
                 int running;
                 if (!string.IsNullOrEmpty(value)
                     && int.TryParse(value.Substring(value.LastIndexOf('-') + 1), out running)
@@ -85,12 +85,12 @@ namespace NSQ.EventManagement.Plugins.EventRegistration
 
         private static bool RunningNumberExists(IOrganizationService service, int number)
         {
-            var query = new QueryExpression(M3Names.Registration)
+            var query = new QueryExpression(LogicalNames.Registration)
             {
                 TopCount = 1,
                 ColumnSet = new ColumnSet(false)
             };
-            query.Criteria.AddCondition(M3Names.RegConfirmationNumber, ConditionOperator.EndsWith, "-" + number.ToString("0000"));
+            query.Criteria.AddCondition(LogicalNames.RegConfirmationNumber, ConditionOperator.EndsWith, "-" + number.ToString("0000"));
             return service.RetrieveMultiple(query).Entities.Any();
         }
     }
