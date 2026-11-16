@@ -63,6 +63,7 @@ NSQ.Event = (function () {
                 "ERROR",
             notificationId
         );
+        endAttribute.setValue(null);   // Automatically clear the invalid End Date, so the user can pick a new one.
         } else {
             formContext.ui.clearFormNotification(notificationId);
         }
