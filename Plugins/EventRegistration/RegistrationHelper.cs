@@ -11,8 +11,8 @@ namespace NSQ.EventManagement.Plugins.EventRegistration
     {
         public static Entity GetPreImage(IPluginExecutionContext context)
         {
-            return context.PreEntityImages.Contains(M3Names.PreImageAlias)
-                ? context.PreEntityImages[M3Names.PreImageAlias]
+            return context.PreEntityImages.Contains(LogicalNames.PreImageAlias)
+                ? context.PreEntityImages[LogicalNames.PreImageAlias]
                 : null;
         }
     }

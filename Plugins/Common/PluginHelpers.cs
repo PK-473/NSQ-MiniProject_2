@@ -6,7 +6,7 @@ namespace NSQ.EventManagement.Plugins.Common
     /// Small helpers used by M3's plugins (Registration and Attendee).
     /// Kept separate so the shared PluginBase.cs does not need to change.
     /// </summary>
-    internal static class M3Helpers
+    internal static class PluginHelpers
     {
         // On Update, Target holds only changed columns: read the new value if present, else the pre-image.
         public static T GetValue<T>(Entity target, Entity preImage, string attribute)

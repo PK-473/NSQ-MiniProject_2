@@ -14,10 +14,10 @@ namespace NSQ.EventManagement.Plugins.EventRegistration
         protected override void ExecutePlugin(IPluginExecutionContext context, IOrganizationService service, ITracingService tracing)
         {
             var targetRef = (EntityReference)context.InputParameters["Target"];
-            var registration = service.Retrieve(targetRef.LogicalName, targetRef.Id, new ColumnSet(M3Names.RegStatus));
+            var registration = service.Retrieve(targetRef.LogicalName, targetRef.Id, new ColumnSet(LogicalNames.RegStatus));
 
-            var status = registration.GetAttributeValue<OptionSetValue>(M3Names.RegStatus);
-            if (status != null && status.Value == M3Names.RegStatusAttended)
+            var status = registration.GetAttributeValue<OptionSetValue>(LogicalNames.RegStatus);
+            if (status != null && status.Value == LogicalNames.RegStatusAttended)
             {
                 throw new InvalidPluginExecutionException("A registration cannot be deleted once the attendee is marked Attended.");
             }

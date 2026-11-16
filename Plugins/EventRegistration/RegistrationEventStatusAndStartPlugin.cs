@@ -15,23 +15,23 @@ namespace NSQ.EventManagement.Plugins.EventRegistration
         protected override void ExecutePlugin(IPluginExecutionContext context, IOrganizationService service, ITracingService tracing)
         {
             var target = (Entity)context.InputParameters["Target"];
-            var eventRef = target.GetAttributeValue<EntityReference>(M3Names.RegEvent);
+            var eventRef = target.GetAttributeValue<EntityReference>(LogicalNames.RegEvent);
             if (eventRef == null) { return; }
 
             var ev = service.Retrieve(eventRef.LogicalName, eventRef.Id,
-                new ColumnSet(M3Names.EventStatus, M3Names.EventStartDate));
+                new ColumnSet(LogicalNames.EventStatus, LogicalNames.EventStartDate));
 
-            var status = ev.GetAttributeValue<OptionSetValue>(M3Names.EventStatus);
-            if (status != null && status.Value == M3Names.EventStatusCancelled)
+            var status = ev.GetAttributeValue<OptionSetValue>(LogicalNames.EventStatus);
+            if (status != null && status.Value == LogicalNames.EventStatusCancelled)
             {
                 throw new InvalidPluginExecutionException("Registration is not allowed because the event is Cancelled."); // E8, R3
             }
-            if (status != null && status.Value == M3Names.EventStatusCompleted)
+            if (status != null && status.Value == LogicalNames.EventStatusCompleted)
             {
                 throw new InvalidPluginExecutionException("Registration is not allowed because the event is Completed."); // R3
             }
 
-            var start = ev.GetAttributeValue<DateTime?>(M3Names.EventStartDate);
+            var start = ev.GetAttributeValue<DateTime?>(LogicalNames.EventStartDate);
             if (start.HasValue && DateTime.UtcNow > start.Value)
             {
                 throw new InvalidPluginExecutionException("Registration is closed because the event has already started."); // R6
