@@ -16,18 +16,18 @@ namespace NSQ.EventManagement.Plugins.Attendee
         protected override void ExecutePlugin(IPluginExecutionContext context, IOrganizationService service, ITracingService tracing)
         {
             var target = (Entity)context.InputParameters["Target"];
-            var preImage = context.PreEntityImages.Contains(M3Names.PreImageAlias)
-                ? context.PreEntityImages[M3Names.PreImageAlias]
+            var preImage = context.PreEntityImages.Contains(LogicalNames.PreImageAlias)
+                ? context.PreEntityImages[LogicalNames.PreImageAlias]
                 : null;
 
             // On update, Target holds only changed columns: fall back to the pre-image.
-            string email = M3Helpers.GetValue<string>(target, preImage, M3Names.AttEmail);
-            string phone = M3Helpers.GetValue<string>(target, preImage, M3Names.AttPhone);
+            string email = PluginHelpers.GetValue<string>(target, preImage, LogicalNames.AttEmail);
+            string phone = PluginHelpers.GetValue<string>(target, preImage, LogicalNames.AttPhone);
             email = string.IsNullOrWhiteSpace(email) ? null : email.Trim().ToLowerInvariant();
             phone = string.IsNullOrWhiteSpace(phone) ? null : phone.Trim();
             if (email == null && phone == null) { return; }
 
-            var query = new QueryExpression(M3Names.Attendee)
+            var query = new QueryExpression(LogicalNames.Attendee)
             {
                 TopCount = 1,
                 ColumnSet = new ColumnSet(false)
@@ -35,13 +35,13 @@ namespace NSQ.EventManagement.Plugins.Attendee
 
             // Match on email OR phone (Dataverse text comparison is case-insensitive).
             var either = new FilterExpression(LogicalOperator.Or);
-            if (email != null) { either.AddCondition(M3Names.AttEmail, ConditionOperator.Equal, email); }
-            if (phone != null) { either.AddCondition(M3Names.AttPhone, ConditionOperator.Equal, phone); }
+            if (email != null) { either.AddCondition(LogicalNames.AttEmail, ConditionOperator.Equal, email); }
+            if (phone != null) { either.AddCondition(LogicalNames.AttPhone, ConditionOperator.Equal, phone); }
             query.Criteria.AddFilter(either);
 
             if (target.Id != Guid.Empty)
             {
-                query.Criteria.AddCondition(M3Names.AttendeeId, ConditionOperator.NotEqual, target.Id);
+                query.Criteria.AddCondition(LogicalNames.AttendeeId, ConditionOperator.NotEqual, target.Id);
             }
 
             if (service.RetrieveMultiple(query).Entities.Any())

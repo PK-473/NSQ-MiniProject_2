@@ -17,22 +17,22 @@ namespace NSQ.EventManagement.Plugins.EventRegistration
             var target = (Entity)context.InputParameters["Target"];
             var preImage = RegistrationHelper.GetPreImage(context);
 
-            var eventRef = M3Helpers.GetValue<EntityReference>(target, preImage, M3Names.RegEvent);
-            var attendeeRef = M3Helpers.GetValue<EntityReference>(target, preImage, M3Names.RegAttendee);
+            var eventRef = PluginHelpers.GetValue<EntityReference>(target, preImage, LogicalNames.RegEvent);
+            var attendeeRef = PluginHelpers.GetValue<EntityReference>(target, preImage, LogicalNames.RegAttendee);
             if (eventRef == null || attendeeRef == null) { return; }
 
-            var query = new QueryExpression(M3Names.Registration)
+            var query = new QueryExpression(LogicalNames.Registration)
             {
                 TopCount = 1,
                 ColumnSet = new ColumnSet(false)
             };
-            query.Criteria.AddCondition(M3Names.RegEvent, ConditionOperator.Equal, eventRef.Id);
-            query.Criteria.AddCondition(M3Names.RegAttendee, ConditionOperator.Equal, attendeeRef.Id);
+            query.Criteria.AddCondition(LogicalNames.RegEvent, ConditionOperator.Equal, eventRef.Id);
+            query.Criteria.AddCondition(LogicalNames.RegAttendee, ConditionOperator.Equal, attendeeRef.Id);
             // A cancelled registration does not count, so the attendee can register again.
-            query.Criteria.AddCondition(M3Names.RegStatus, ConditionOperator.NotEqual, M3Names.RegStatusCancelled);
+            query.Criteria.AddCondition(LogicalNames.RegStatus, ConditionOperator.NotEqual, LogicalNames.RegStatusCancelled);
             if (target.Id != Guid.Empty)
             {
-                query.Criteria.AddCondition(M3Names.RegistrationId, ConditionOperator.NotEqual, target.Id);
+                query.Criteria.AddCondition(LogicalNames.RegistrationId, ConditionOperator.NotEqual, target.Id);
             }
 
             if (service.RetrieveMultiple(query).Entities.Any())

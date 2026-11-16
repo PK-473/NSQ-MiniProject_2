@@ -14,14 +14,14 @@ namespace NSQ.EventManagement.Plugins.EventRegistration
         protected override void ExecutePlugin(IPluginExecutionContext context, IOrganizationService service, ITracingService tracing)
         {
             var target = (Entity)context.InputParameters["Target"];
-            var attendeeRef = target.GetAttributeValue<EntityReference>(M3Names.RegAttendee);
+            var attendeeRef = target.GetAttributeValue<EntityReference>(LogicalNames.RegAttendee);
             if (attendeeRef == null) { return; }
 
             var attendee = service.Retrieve(attendeeRef.LogicalName, attendeeRef.Id,
-                new ColumnSet(M3Names.AttEmail, M3Names.AttPhone));
+                new ColumnSet(LogicalNames.AttEmail, LogicalNames.AttPhone));
 
-            var email = attendee.GetAttributeValue<string>(M3Names.AttEmail);
-            var phone = attendee.GetAttributeValue<string>(M3Names.AttPhone);
+            var email = attendee.GetAttributeValue<string>(LogicalNames.AttEmail);
+            var phone = attendee.GetAttributeValue<string>(LogicalNames.AttPhone);
             if (string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(phone))
             {
                 throw new InvalidPluginExecutionException(

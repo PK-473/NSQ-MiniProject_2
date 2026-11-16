@@ -97,8 +97,8 @@
   <ItemGroup>
     <Compile Include="Attendee\AttendeeDuplicateCheckPlugin.cs" />
     <Compile Include="Common\LogicalNames.cs" />
-    <Compile Include="Common\M3Helpers.cs" />
-    <Compile Include="Common\M3Names.cs" />
+    <Compile Include="Common\PluginHelpers.cs" />
+    <Compile Include="Common\LogicalNames.cs" />
     <Compile Include="Common\OptionSetValues.cs" />
     <Compile Include="Common\PluginBase.cs" />
     <Compile Include="Event\EventCodeGeneratorPlugin.cs" />

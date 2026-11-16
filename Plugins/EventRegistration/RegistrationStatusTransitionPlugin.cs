@@ -22,9 +22,9 @@ namespace NSQ.EventManagement.Plugins.EventRegistration
         protected override void ExecutePlugin(IPluginExecutionContext context, IOrganizationService service, ITracingService tracing)
         {
             var target = (Entity)context.InputParameters["Target"];
-            if (!target.Contains(M3Names.RegStatus)) { return; }
+            if (!target.Contains(LogicalNames.RegStatus)) { return; }
 
-            var newStatus = target.GetAttributeValue<OptionSetValue>(M3Names.RegStatus);
+            var newStatus = target.GetAttributeValue<OptionSetValue>(LogicalNames.RegStatus);
             if (newStatus == null) { return; }
 
             var oldStatus = GetOldStatus(context, service, target);
@@ -33,21 +33,21 @@ namespace NSQ.EventManagement.Plugins.EventRegistration
             int from = oldStatus.Value;
             int to = newStatus.Value;
 
-            if (from == M3Names.RegStatusCancelled)
+            if (from == LogicalNames.RegStatusCancelled)
             {
-                if (to == M3Names.RegStatusRegistered)
+                if (to == LogicalNames.RegStatusRegistered)
                 {
                     throw new InvalidPluginExecutionException("A cancelled registration cannot be changed back to Registered.");
                 }
                 throw new InvalidPluginExecutionException("A cancelled registration is final and cannot be changed to another status.");
             }
 
-            if (from == M3Names.RegStatusAttended)
+            if (from == LogicalNames.RegStatusAttended)
             {
                 throw new InvalidPluginExecutionException("An attended registration is final and its status cannot be changed.");
             }
 
-            if (from == M3Names.RegStatusNoShow && to != M3Names.RegStatusAttended)
+            if (from == LogicalNames.RegStatusNoShow && to != LogicalNames.RegStatusAttended)
             {
                 throw new InvalidPluginExecutionException("A No Show registration can only be corrected to Attended.");
             }
@@ -60,11 +60,11 @@ namespace NSQ.EventManagement.Plugins.EventRegistration
         private static OptionSetValue GetOldStatus(IPluginExecutionContext context, IOrganizationService service, Entity target)
         {
             var preImage = RegistrationHelper.GetPreImage(context);
-            var fromImage = preImage != null ? preImage.GetAttributeValue<OptionSetValue>(M3Names.RegStatus) : null;
+            var fromImage = preImage != null ? preImage.GetAttributeValue<OptionSetValue>(LogicalNames.RegStatus) : null;
             if (fromImage != null) { return fromImage; }
 
-            var current = service.Retrieve(target.LogicalName, target.Id, new ColumnSet(M3Names.RegStatus));
-            return current.GetAttributeValue<OptionSetValue>(M3Names.RegStatus);
+            var current = service.Retrieve(target.LogicalName, target.Id, new ColumnSet(LogicalNames.RegStatus));
+            return current.GetAttributeValue<OptionSetValue>(LogicalNames.RegStatus);
         }
     }
 }
