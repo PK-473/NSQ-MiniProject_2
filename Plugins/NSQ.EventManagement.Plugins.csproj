@@ -96,10 +96,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Attendee\AttendeeDuplicateCheckPlugin.cs" />
-    <Compile Include="Common\LogicalNames.cs" />
     <Compile Include="Common\PluginHelpers.cs" />
-    <Compile Include="Common\LogicalNames.cs" />
     <Compile Include="Common\PluginBase.cs" />
+	<Compile Include="Common\LogicalNames.cs" />
     <Compile Include="Event\EventCodeGeneratorPlugin.cs" />
     <Compile Include="Event\EventCompletedNoShowPlugin.cs" />
     <Compile Include="Event\EventOverlapValidationPlugin.cs" />
