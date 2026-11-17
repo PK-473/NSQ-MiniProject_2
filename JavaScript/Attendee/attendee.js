@@ -107,13 +107,23 @@ NSQ.Attendee = (function () {
         var phone = getValue(formContext, FIELD.phone);
         if (!isBlank(phone)) {
             var cleaned = String(phone).replace(/[\s\-().]/g, "");
-            if (PHONE_REGEX.test(cleaned)) {
-                clearFieldError(formContext, FIELD.phone, "A7_phone");
-                // Store the clean form, so "+91 98765 43210" and "+919876543210" are the same number for plugin A1.
-                if (cleaned !== phone) { formContext.getAttribute(FIELD.phone).setValue(cleaned); }
-            } else {
-                setFieldError(formContext, FIELD.phone, "Phone must start with + and contain only numbers, for example +919876543210.", "A7_phone");
+
+            // Must be exactly 13 characters including '+'
+            if (!/^\+\d{12}$/.test(cleaned)) {
+                setFieldError(
+                    formContext,
+                    FIELD.phone,
+                    "must start with '+' and contain exactly 12 digits (13 characters total), for example +919876543210.",
+                    "A7_phone"
+                );
                 valid = false;
+            } else {
+                clearFieldError(formContext, FIELD.phone, "A7_phone");
+
+                // Store the cleaned format
+                if (cleaned !== phone) {
+                    formContext.getAttribute(FIELD.phone).setValue(cleaned);
+                }
             }
         } else {
             clearFieldError(formContext, FIELD.phone, "A7_phone");
